@@ -51,7 +51,7 @@ public class StatusCheck extends TimerTask {
                 sb.append("Session: " + this.getColored(session) + " -> " + this.getColored(this.statuses[1]) + ", ");
             }
             if (skins != this.statuses[2]) {
-                sb.append("Session" + this.getColored(skins) + " -> " + this.getColored(this.statuses[2]) + ", ");
+                sb.append("Skins: " + this.getColored(skins) + " -> " + this.getColored(this.statuses[2]) + ", ");
             }
             if (sb.length() != 0) {
                 sb.delete(sb.length() - 2, sb.length());
