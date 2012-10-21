@@ -6,12 +6,14 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Timer;
 import org.jibble.pircbot.IrcException;
 import org.jibble.pircbot.NickAlreadyInUseException;
 import org.jibble.pircbot.PircBot;
+import com.google.gson.Gson;
 
 public class McStatus extends PircBot {
     public static void main(final String[] args) throws Exception {
@@ -23,6 +25,7 @@ public class McStatus extends PircBot {
     protected boolean forceQuit = false;
     private final Listener listener;
     private String auth;
+    public String apiKey;
 
     public McStatus() throws NickAlreadyInUseException, IOException, IrcException {
         System.out.println("Starting...");
@@ -34,6 +37,8 @@ public class McStatus extends PircBot {
                 out.write("# McStatus configuration");
                 out.newLine();
                 out.write("authline: mietech pass");
+                out.newLine();
+                out.write("mcbapi: default");
                 out.close();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -49,6 +54,9 @@ public class McStatus extends PircBot {
                 }
                 if (nextLine.startsWith("authline: ")) {
                     auth = nextLine.replace("authline: ", "");
+                }
+                if (nextLine.startsWith("mcbapi: ")) {
+                    apiKey = nextLine.replace("mcbapi: ", "");
                 }
             }
             in.close();
@@ -79,6 +87,33 @@ public class McStatus extends PircBot {
             connection.disconnect();
             return Status.fromStatusCode(code);
         } catch (final Exception e) {
+            return Status.UNKNOWN;
+        }
+    }
+
+    protected Status getMCBStatus(final String urlToCheck) {
+        try {
+            final URL url = new URL(urlToCheck);
+            final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.connect();
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder json = new StringBuilder();
+            String nextLine;
+            while ((nextLine = in.readLine()) != null) {
+                json.append(nextLine);
+            }
+            connection.disconnect();
+            MCBouncerReply reply = (new Gson()).fromJson(json.toString(), MCBouncerReply.class);
+            if (reply.success) {
+                return Status.UP;
+            } else {
+                return Status.DOWN;
+            }
+        } catch (final Exception e) {
+            if (e instanceof IOException) {
+                return Status.DOWN;
+            }
             return Status.UNKNOWN;
         }
     }
